@@ -3,8 +3,8 @@ name: Deploy Documentation
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the 'main' branch
-  workflow_dispatch:  # Allow manual triggering
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -17,21 +17,23 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # Use a specific Python version (e.g., 3.9, 3.10); '3.x' is a good general choice
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -c constraints.txt -r requirements.txt
+          pip install --no-deps httpx==0.25.2
+          pip install --no-deps httpcore==0.17.3
+
 
       - name: Build documentation
         run: |
           cd docs
-          make html  # This assumes you're using Sphinx with the standard Makefile
+          make html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html  # Path to your built HTML documentation
-          # cname: yourcustomdomain.com  # Optional: If you have a custom domain
+          publish_dir: ./docs/build/html
