@@ -1,0 +1,23 @@
+# General
+__pycache__/
+*.pyc
+*.log
+*.swp
+.DS_Store
+
+# Environment
+env/
+venv/
+.env
+
+# Build artifacts (adjust if you have different output directories)
+build/
+dist/
+
+# IDE/Editor specific
+.idea/
+.vscode/
+
+# Uploads directory (assuming you don't want to track user uploads)
+uploads/
+test_uploads/
