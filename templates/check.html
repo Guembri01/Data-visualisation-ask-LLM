@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <main id="main-content">
+        <h3 style="text-align: center">Data Quality Issues</h3>
+
+        <nav id="navbar">
+            <button id="checkDataButton">Check Data Quality</button>
+        </nav>
+
+        <section id="data-quality-section">
+            <div id="dataQualityResults"></div>
+        </section>
+    </main>
+</div>
+
+<script>
+    // Make uploadedFilename available to scripts.js from the session variable
+    window.uploadedFilename = "{{ uploadedFilename }}";
+    console.log("uploadedFilename from server:", window.uploadedFilename);
+</script>
+
+<style>
+  table {
+    width: 100%; /* Make the table fit the container */
+    border-collapse: collapse;
+    margin-top: 40px;
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    display: block; /* Required for overflow-x to work */
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-size: 14px; /* Slightly smaller font size for better fit */
+    white-space: nowrap; /* Prevent text from wrapping */
+  }
+
+  th {
+    background-color: #695cfe;
+    color: white;
+  }
+</style>
+{% endblock %}
