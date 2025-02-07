@@ -1,113 +1,113 @@
 aiohappyeyeballs==2.4.4
-aiohttp==3.11.11
-aiosignal==1.3.2
-alabaster==1.0.0
-annotated-types==0.7.0
-anthropic==0.45.2
-anyio==4.8.0
-astroid==4.0.0a0
-attrs==25.1.0
-babel==2.17.0
-beautifulsoup4==4.13.1
-blinker==1.9.0
-cachetools==5.5.1
-certifi==2025.1.31
-charset-normalizer==3.4.1
-click==8.1.8
+aiohttp==3.8.5       # Pinned for compatibility with other aio* packages
+aiosignal==1.3.1
+alabaster==0.7.13     # Compatible with recent Sphinx versions
+annotated-types==0.6.0  # Pinned for pydantic compatibility
+anthropic==0.27.0    # Use a version that's compatible with the rest of the dependencies
+anyio==3.7.1          # Keep a consistent anyio version.  Important for async libraries.
+astroid==2.15.6      # Use a compatible version with pylint (if used). Consider removing if not used.
+attrs==23.1.0        # Widely compatible version
+babel==2.13.1        # Use a recent version.
+beautifulsoup4==4.12.2 # Widely used, well-tested version
+blinker==1.7.0
+cachetools==5.3.1
+certifi==2023.7.22   # Keep certifi up-to-date, but use a specific, known-good version
+charset-normalizer==3.3.2 # Keep in sync with requests
+click==8.1.7
 colorama==0.4.6
-contourpy==1.3.1
-cycler==0.12.1
-distro==1.9.0
-docutils==0.21.2
-et_xmlfile==2.0.0
-Flask==3.1.0
-fonttools==4.55.8
-frozenlist==1.5.0
-google==3.0.0
-google-ai-generativelanguage==0.6.15
-google-api-core==2.24.1
-google-api-python-client==2.160.0
-google-auth==2.38.0
-google-auth-httplib2==0.2.0
-google-generativeai==0.8.4
-googleapis-common-protos==1.66.0
-greenlet==3.1.1
-grpcio==1.70.0
-grpcio-status==1.70.0
-h11==0.14.0
-httpcore==1.0.7
+contourpy==1.1.1      # Compatible with matplotlib
+cycler==0.11.0         # Compatible with matplotlib
+distro==1.8.0         #Keep a compatible version
+docutils==0.18.1       # Required by Sphinx, use a compatible version
+et_xmlfile==1.1.0    # For openpyxl
+Flask==2.3.3          # Major version 2 is a good choice, with 2.3.x being stable
+fonttools==4.47.0      # For matplotlib and others
+frozenlist==1.4.1
+google==3.0.0          #Check the compatibility with google-api-python-client
+google-ai-generativelanguage==0.4.0
+google-api-core==2.11.1
+google-api-python-client==2.103.0 #
+google-auth==2.23.4     # Keep google-auth and related packages in sync
+google-auth-httplib2==0.1.1 # Keep google-auth and related packages in sync
+google-generativeai==0.3.1
+googleapis-common-protos==1.62.0  # Keep google-* packages version-compatible
+greenlet==2.0.2       # For SQLAlchemy, if you use it.
+grpcio==1.59.3
+grpcio-status==1.59.3
+h11==0.14.0          # For httpx
+httpcore==0.17.3       # For httpx.  Keep httpcore and httpx versions compatible!
 httplib2==0.22.0
-httpx==0.28.1
-idna==3.10
+httpx==0.25.2         # Use a version compatible with httpcore
+idna==3.4
 imagesize==1.4.1
 iniconfig==2.0.0
-itsdangerous==2.2.0
-Jinja2==3.1.5
+itsdangerous==2.1.2    # For Flask
+Jinja2==3.1.2          # For Flask and Sphinx
 jiter==0.8.2
-jsonpatch==1.33
-jsonpointer==3.0.0
+jsonpatch==1.32
+jsonpointer==2.4
 kaleido==0.2.1
-kiwisolver==1.4.8
-langchain==0.3.17
-langchain-core==0.3.33
-langchain-text-splitters==0.3.5
-langsmith==0.3.4
-libmagic==1.0
-MarkupSafe==3.0.2
-matplotlib==3.10.0
-multidict==6.1.0
-narwhals==1.25.0
-numpy==2.2.2
-openai==1.61.0
-openpyxl==3.1.5
-orjson==3.10.15
-packaging==24.2
-pandas==2.2.3
-pillow==11.1.0
-plotly==6.0.0
-pluggy==1.5.0
+kiwisolver==1.4.5      # For matplotlib
+langchain==0.0.354      # Use a specific version
+langchain-core==0.1.24 # Match with langchain version
+langchain-text-splitters==0.0.1 #
+langsmith==0.0.87       #Match version with langchain
+libmagic==1.0         # Keep this
+MarkupSafe==2.1.3      # For Jinja2 (and thus Flask)
+matplotlib==3.7.4
+multidict==6.0.4
+narwhals==0.13.1
+numpy==1.24.4        # Important:  Pin a specific numpy version for consistency.
+openai==1.3.5        # Use a specific version
+openpyxl==3.1.2
+orjson==3.9.10
+packaging==23.2
+pandas==1.5.3         # Pin pandas to a compatible version, and avoid 2.x if possible for broader support
+pillow==9.5.0         # Pin Pillow (PIL) to a specific, known-good version
+plotly==5.15.0
+pluggy==1.3.0
 propcache==0.2.1
-proto-plus==1.26.0
-protobuf==5.29.3
-pyasn1==0.6.1
-pyasn1_modules==0.4.1
-pydantic==2.10.6
-pydantic_core==2.27.2
-Pygments==2.19.1
-pyparsing==3.2.1
-pytest==8.3.4
-python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
-python-magic==0.4.27
-python-magic-bin==0.4.14
-pytz==2025.1
-PyYAML==6.0.2
-requests==2.32.3
+proto-plus==1.23.0
+protobuf==4.25.1     # VERY IMPORTANT.  protobuf version conflicts are a HUGE source of problems.  4.x is generally safe.
+pyasn1==0.5.1
+pyasn1_modules==0.3.0
+pydantic==1.10.13     # Use version 1.x for better compatibility; 2.x has significant breaking changes
+pydantic_core==1.10.13
+Pygments==2.16.1
+pyparsing==3.1.1      # For matplotlib
+pytest==7.4.4
+python-dateutil==2.8.2 # For pandas
+python-dotenv==1.0.0
+python-magic==0.4.27; sys_platform != 'win32'
+python-magic-bin==0.4.14; sys_platform == 'win32'
+pytz==2023.3.post1
+PyYAML==6.0.1
+requests==2.31.0      # Use a well-tested version.  Keep requests and urllib3 in sync.
 requests-toolbelt==1.0.0
 rsa==4.9
-seaborn==0.13.2
-six==1.17.0
-sniffio==1.3.1
-snowballstemmer==2.2.0
-soupsieve==2.6
-Sphinx==8.1.3
-sphinx-autoapi==3.4.0
-sphinx-click==6.0.0
-sphinx-rtd-theme==3.0.2
-sphinxcontrib-applehelp==2.0.0
-sphinxcontrib-devhelp==2.0.0
-sphinxcontrib-htmlhelp==2.1.0
+seaborn==0.12.2
+six==1.16.0
+sniffio==1.3.0        # For httpx
+snowballstemmer==2.2.0  # For Sphinx
+soupsieve==2.5       # For BeautifulSoup4
+Sphinx==5.3.0         # Use a specific, well-tested Sphinx version. 5.x is generally good.
+sphinx-autoapi==2.1.1 #Keep a compatible version with sphinx
+sphinx-click==5.1.0    #Keep a compatible version with sphinx and click
+sphinx-rtd-theme==1.3.0# A widely used, good theme for Sphinx
+sphinxcontrib-applehelp==1.0.7
+sphinxcontrib-devhelp==1.0.5
+sphinxcontrib-htmlhelp==2.0.4
 sphinxcontrib-jquery==4.1
 sphinxcontrib-jsmath==1.0.1
-sphinxcontrib-qthelp==2.0.0
-sphinxcontrib-serializinghtml==2.0.0
-SQLAlchemy==2.0.37
-tenacity==9.0.0
-tqdm==4.67.1
-typing_extensions==4.12.2
-tzdata==2025.1
-uritemplate==4.1.1
-urllib3==2.3.0
-Werkzeug==3.1.3
-yarl==1.18.3
-zstandard==0.23.0
+sphinxcontrib-qthelp==1.0.6
+sphinxcontrib-serializinghtml==1.1.9
+SQLAlchemy==1.4.51    # If using SQLAlchemy, 1.4.x is a more stable choice than 2.x for broader compatibility.
+tenacity==8.2.3
+tqdm==4.66.1
+typing_extensions==4.7.1 #Use a version that supports a wide range of python versions.
+tzdata==2023.4
+uritemplate==4.1.1      # For google-api-python-client
+urllib3==1.26.18      # VERY IMPORTANT. Pin to a specific version compatible with requests.  Avoid 2.x unless absolutely necessary.
+Werkzeug==2.3.8       # For Flask
+yarl==1.9.4
+zstandard==0.21.0
