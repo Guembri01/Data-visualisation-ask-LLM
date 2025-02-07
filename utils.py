@@ -18,6 +18,7 @@ import re
 import numpy as np
 import matplotlib
 import random
+from typing import Optional
 
 matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
@@ -300,7 +301,7 @@ def filter_data_by_top_variables(df: pd.DataFrame, column_name: str, top_n_varia
     print(f"filter_data_by_top_variables - END: result_df.shape={result_df.shape}")
     return result_df
 
-def _get_plot_suggestions(model_function, df: pd.DataFrame, api_key: str) -> list | None:
+def get_plot_suggestions(model_function, df: pd.DataFrame, api_key: str) -> Optional[list]:
     """Helper function to get plot suggestions and code using a model function, with retries."""
     max_retries = 5
     retry_delay = 5  # Start with a 5-second delay
