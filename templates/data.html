@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <main id="main-content">
+        <h3 style="text-align: center">Upload & View Dataset</h3>
+        <nav id="navbar">
+            <label for="fileInput" id="uploadButton" class="custom-file-upload"
+                style="background-color: #695cfe; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                Upload Dataset
+            </label>
+        </nav>
+
+        <input type="file" id="fileInput" accept=".csv,.xlsx" style="display: none;">
+
+        <section id="upload-section">
+            <div id="uploadStatus" style="margin-top: 20px; font-weight: bold; font-size: 19px; color: #695cfe;"></div>
+        </section>
+
+        <!-- Dataset Name and Show Dataset Button -->
+        <div id="datasetInfo" style="display: none; margin-top: 20px;">
+            <h4 id="datasetName" style="color: #000000;"></h4>
+            <button id="showDatasetButton"
+                style="background-color: #695cfe; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                Show Dataset
+            </button>
+        </div>
+
+        <!-- Dataset Table -->
+        <div id="datasetTableContainer" style="margin-top: 20px; display: none;">
+            <div style="overflow-x: auto; direction: ltr;">  <!-- Enable horizontal scrolling -->
+                <table id="datasetTable" style="width: auto; border-collapse: collapse; font-size: 12px; white-space: nowrap;">
+                    <thead>
+                        <tr style="background-color: #695cfe; color: white;">
+                            <!-- Table headers will be populated dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="paginationControls" style="margin-top: 20px; text-align: center;">
+                <button id="prevPageButton"
+                    style="background-color: #695cfe; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">
+                    Previous
+                </button>
+                <span id="pageInfo" style="font-weight: bold; font-size: 19px;color: #695cfe;"></span>
+                <button id="nextPageButton"
+                    style="background-color: #695cfe; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; margin-left: 10px;">
+                    Next
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const fileInput = document.getElementById("fileInput");
+        const uploadButton = document.getElementById("uploadButton");
+        const uploadStatus = document.getElementById("uploadStatus");
+        const datasetInfo = document.getElementById("datasetInfo");
+        const datasetName = document.getElementById("datasetName");
+        const showDatasetButton = document.getElementById("showDatasetButton");
+        const datasetTableContainer = document.getElementById("datasetTableContainer");
+        const datasetTable = document.getElementById("datasetTable");
+        const prevPageButton = document.getElementById("prevPageButton");
+        const nextPageButton = document.getElementById("nextPageButton");
+        const pageInfo = document.getElementById("pageInfo");
+
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let dataset = [];
+        let headers = []; // Store the headers
+
+        // Upload file logic
+        uploadButton.addEventListener("click", function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener("change", function () {
+            const file = fileInput.files[0];
+            if (!file) {
+                uploadStatus.textContent = "Please select a file.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.error) {
+                        uploadStatus.textContent = data.error;
+                    } else {
+                        uploadStatus.textContent = "File uploaded successfully!";
+                        datasetName.textContent = `Dataset: ${file.name}`;
+                        datasetInfo.style.display = "block";
+                        localStorage.setItem("uploadedFilename", data.filename);
+                    }
+                })
+                .catch((error) => {
+                    uploadStatus.textContent = "Error uploading file.";
+                });
+        });
+
+        // Show dataset logic
+        showDatasetButton.addEventListener("click", function () {
+            const uploadedFilename = localStorage.getItem("uploadedFilename");
+            if (!uploadedFilename) {
+                alert("Please upload a file first.");
+                return;
+            }
+
+            fetch(`/uploads/${uploadedFilename}`)
+                .then((response) => response.text())
+                .then((data) => {
+                    const rows = data.split("\n");
+                    headers = rows[0].split(","); // Get headers
+                    dataset = rows.slice(1).map(row => row.split(",")); // Skip header and parse data
+                    renderTable(currentPage);
+                    datasetTableContainer.style.display = "block";
+                })
+                .catch((error) => {
+                    console.error("Error loading dataset:", error);
+                });
+        });
+
+        // Render table with pagination
+        function renderTable(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = dataset.slice(start, end);
+
+            // Clear existing table content
+            let tableHTML = `<thead>
+                                 <tr style="background-color: #695cfe; color: white;">
+                                     ${headers.map(header => `<th style="padding: 8px; border: 1px solid #ddd;">${header}</th>`).join("")}
+                                 </tr>
+                             </thead>
+                             <tbody>`;
+
+
+            for (const row of paginatedData) {
+                tableHTML += `<tr>${row.map(cell => `<td style="padding: 8px; border: 1px solid #ddd;">${cell}</td>`).join("")}</tr>`;
+            }
+
+            tableHTML += `</tbody>`;
+            datasetTable.innerHTML = tableHTML;
+
+
+            // Update pagination info
+            pageInfo.textContent = `Page ${page} of ${Math.ceil(dataset.length / rowsPerPage)}`;
+        }
+
+
+        // Pagination controls
+        prevPageButton.addEventListener("click", function () {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(currentPage);
+            }
+        });
+
+        nextPageButton.addEventListener("click", function () {
+            if (currentPage < Math.ceil(dataset.length / rowsPerPage)) {
+                currentPage++;
+                renderTable(currentPage);
+            }
+        });
+    });
+</script>
+{% endblock %}
