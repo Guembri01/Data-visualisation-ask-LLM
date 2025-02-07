@@ -18,7 +18,7 @@ import re
 import numpy as np
 import matplotlib
 import random
-from typing import Optional
+from typing import List, Optional
 
 matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
