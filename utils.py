@@ -301,7 +301,8 @@ def filter_data_by_top_variables(df: pd.DataFrame, column_name: str, top_n_varia
     print(f"filter_data_by_top_variables - END: result_df.shape={result_df.shape}")
     return result_df
 
-def get_plot_suggestions(model_function, df: pd.DataFrame, api_key: str) -> Optional[list]:
+
+def _get_plot_suggestions(model_function, df: pd.DataFrame, api_key: str) -> Optional[List[dict]]:
     """Helper function to get plot suggestions and code using a model function, with retries."""
     max_retries = 5
     retry_delay = 5  # Start with a 5-second delay
@@ -323,6 +324,7 @@ def get_plot_suggestions(model_function, df: pd.DataFrame, api_key: str) -> Opti
                 print("Max retries reached. Returning None.")
                 return None
     return None
+
 
 def get_plot_suggestion_from_gemini(df: pd.DataFrame, api_key: str) -> list | None:
     """Gets plot suggestions and Python code from Gemini, with retries."""
