@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -24,14 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -c constraints.txt -r requirements.txt
           pip install --no-deps httpx==0.25.2 httpcore==0.17.3  # Install without deps
-          # Now, modify the httpx metadata
-          python -c "
-import pathlib, re
-p = pathlib.Path('/opt/hostedtoolcache/Python/3.9.21/x64/lib/python3.9/site-packages/httpx-0.25.2.dist-info/METADATA')
-t = p.read_text()
-t = re.sub(r'httpcore==1.\*', 'httpcore==0.17.3', t)
-p.write_text(t)
-"
+          
+          # Dynamically find and modify httpx metadata
+          METADATA_FILE=$(python -c "import importlib_metadata; print(importlib_metadata.files('httpx')[0].parent / 'METADATA')")
+          sed -i 's/httpcore==1.\*/httpcore==0.17.3/' "$METADATA_FILE"
 
       - name: Build documentation
         run: |
