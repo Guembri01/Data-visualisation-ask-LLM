@@ -27,9 +27,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: List docs directory before build
+    - name: List source directory before build
       run: |
-        ls -lR docs
+        ls -lR docs/source
 
     - name: Build documentation
       run: |
@@ -38,7 +38,7 @@ jobs:
       # Temporarily remove continue-on-error to catch build issues
       # continue-on-error: true
 
-    - name: List docs directory after build
+    - name: List build directory after build
       run: |
         ls -lR docs/build/html
 
