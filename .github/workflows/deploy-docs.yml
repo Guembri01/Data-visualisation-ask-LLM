@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -27,13 +27,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: List docs directory before build
+      run: |
+        ls -lR docs
+
     - name: Build documentation
       run: |
         cd docs
         make html
+      # Temporarily remove continue-on-error to catch build issues
+      # continue-on-error: true
 
-
-    - name: List built files
+    - name: List docs directory after build
       run: |
         ls -lR docs/build/html
 
