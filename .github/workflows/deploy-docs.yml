@@ -31,11 +31,15 @@ jobs:
       run: |
         cd docs
         make html
-      continue-on-error: true
+
+
+    - name: List built files
+      run: |
+        ls -lR docs/build/html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs/build/html
-        target_branch: gh-pages  
+        target_branch: gh-pages
