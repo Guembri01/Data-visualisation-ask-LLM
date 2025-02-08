@@ -34,6 +34,7 @@ jobs:
     - name: Build documentation
       run: |
         cd docs
+        make clear
         make html
       # Temporarily remove continue-on-error to catch build issues
       # continue-on-error: true
