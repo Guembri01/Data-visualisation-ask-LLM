@@ -1,0 +1,767 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app &mdash; Data Visualization App  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Data Visualization App
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ai_model.html">AI Model Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils_api.html">utils.py API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../app_api.html">app.py API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Data Visualization App</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">app</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for app</h1><div class="highlight"><pre>
+<span></span><span class="c1"># app.py (Fully Documented)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module implements a Flask web application for data visualization.</span>
+
+<span class="sd">It provides functionalities for uploading data files, performing data</span>
+<span class="sd">quality checks, applying data fixes, generating plots, and interacting</span>
+<span class="sd">with a language model for graph interpretation.  It supports both Gemini and</span>
+<span class="sd">Claude APIs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">send_from_directory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">werkzeug.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">secure_filename</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">magic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openpyxl</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workbook</span>
+
+<span class="c1"># Import functions from utils.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">analyze_data</span><span class="p">,</span>
+    <span class="n">apply_fixes_to_data</span><span class="p">,</span>
+    <span class="n">generate_graph_interpretation_gemini</span><span class="p">,</span>
+    <span class="n">handle_graph_communication_gemini</span><span class="p">,</span>
+    <span class="n">get_plot_suggestion_from_gemini</span><span class="p">,</span>
+    <span class="n">create_dataset_summary</span><span class="p">,</span>
+    <span class="n">generate_graph_interpretation_claude</span><span class="p">,</span>  <span class="c1"># Import Claude functions</span>
+    <span class="n">handle_graph_communication_claude</span><span class="p">,</span>
+    <span class="n">get_plot_suggestion_from_claude</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># --- Configuration ---</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;The Flask application instance.&quot;&quot;&quot;</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+<span class="n">UPLOAD_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;uploads&quot;</span>
+<span class="n">ALLOWED_MIME_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text/csv&quot;</span><span class="p">,</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">,</span> <span class="s2">&quot;application/csv&quot;</span><span class="p">,</span> <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;xlsx&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span> <span class="s2">&quot;application/zip&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;xls&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">,</span> <span class="s2">&quot;application/octet-stream&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;txt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text/plain&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;tsv&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text/tab-separated-values&quot;</span><span class="p">,</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;parquet&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span> <span class="s2">&quot;application/x-parquet&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;feather&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span> <span class="s2">&quot;application/x-feather&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;orc&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span> <span class="s2">&quot;application/x-orc&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;xml&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/xml&quot;</span><span class="p">,</span> <span class="s2">&quot;text/xml&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;html&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text/html&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/x-hdf5&quot;</span><span class="p">,</span> <span class="s2">&quot;application/octet-stream&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;sql&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;application/sql&quot;</span><span class="p">,</span> <span class="s2">&quot;application/x-sql&quot;</span><span class="p">,</span> <span class="s2">&quot;application/vnd.sqlite3&quot;</span><span class="p">,</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A dictionary mapping allowed file extensions to a list of their acceptable MIME types.</span>
+<span class="sd">This allows for flexibility in MIME type detection, as different systems and file</span>
+<span class="sd">contents might lead to variations in the detected MIME type.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UPLOAD_FOLDER</span>
+<span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;MAX_CONTENT_LENGTH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>  <span class="c1"># 64 MB</span>
+
+<span class="c1"># --- Logging Setup ---</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;app.log&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(module)s</span><span class="s2"> - </span><span class="si">%(funcName)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Helper Functions ---</span>
+
+<div class="viewcode-block" id="validate_file_content">
+<a class="viewcode-back" href="../usage.html#app.validate_file_content">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_file_content</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the content of an uploaded file using libmagic.</span>
+
+<span class="sd">    This function checks if the detected MIME type of the file is among the</span>
+<span class="sd">    allowed MIME types for its extension.  It uses a dictionary of lists</span>
+<span class="sd">    to account for variations in MIME type detection.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): The path to the file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if the file content is valid, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - START: filepath=</span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">mime</span> <span class="o">=</span> <span class="n">magic</span><span class="o">.</span><span class="n">Magic</span><span class="p">(</span><span class="n">mime</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">detected_type</span> <span class="o">=</span> <span class="n">mime</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in validate_file_content during MIME detection: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - Error during MIME detection: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Consider any error during MIME detection as invalid</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Detected MIME type for </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">detected_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">, detected_type: </span><span class="si">{</span><span class="n">detected_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">secure_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">file_extension</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, file_extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Debug Print</span>
+
+    <span class="c1"># Check if the extension is allowed AND if the detected MIME type is in the allowed list</span>
+    <span class="k">if</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="n">ALLOWED_MIME_TYPES</span><span class="p">:</span>
+        <span class="n">is_allowed</span> <span class="o">=</span> <span class="n">detected_type</span> <span class="ow">in</span> <span class="n">ALLOWED_MIME_TYPES</span><span class="p">[</span><span class="n">file_extension</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">, is_allowed: </span><span class="si">{</span><span class="n">is_allowed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - END (allowed): is_allowed=</span><span class="si">{</span><span class="n">is_allowed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">is_allowed</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File type not allowed: </span><span class="si">{</span><span class="n">detected_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - File type not allowed: </span><span class="si">{</span><span class="n">detected_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;validate_file_content - END (not allowed): detected_type=</span><span class="si">{</span><span class="n">detected_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="load_data">
+<a class="viewcode-back" href="../usage.html#app.load_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads data from a file into a pandas DataFrame.</span>
+
+<span class="sd">    This function supports various file formats including CSV, Excel, JSON,</span>
+<span class="sd">    TSV, Parquet, Feather, ORC, XML, HTML, and HDF5.  It handles potential</span>
+<span class="sd">    errors like UnicodeDecodeError and provides informative logging.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filepath (str): The path to the file.</span>
+<span class="sd">        filename (str): The name of the file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pandas.DataFrame: The loaded DataFrame, or None if an error occurred.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - START: filepath=</span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">, filename=</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Sanitize filename here too</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">secure_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">file_extension</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading data from </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2"> (extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - file_extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+
+        <span class="k">if</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">low_memory</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;UnicodeDecodeError reading </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">, trying latin1 encoding&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - UnicodeDecodeError, trying latin1&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;latin1&#39;</span><span class="p">,</span> <span class="n">low_memory</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;xls&quot;</span><span class="p">,</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">workbook</span> <span class="o">=</span> <span class="n">load_workbook</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filepath</span><span class="p">,</span> <span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">sheet_name</span> <span class="o">=</span> <span class="n">workbook</span><span class="o">.</span><span class="n">sheetnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;openpyxl&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error loading Excel with openpyxl, trying default engine: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - Error with openpyxl, trying default: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>  <span class="c1"># Fallback to default engine</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;json&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ValueError reading JSON with orient=records, trying default&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - ValueError with orient=records, trying default&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;txt&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - txt file detected, returning None&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;tsv&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">low_memory</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;parquet&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;feather&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;orc&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_orc</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;xml&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_xml</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;html&quot;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_html</span><span class="p">(</span><span class="n">filepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - HDF5 keys: </span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+                <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">store</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No datasets found in HDF5 file: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - No datasets in HDF5: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No datasets in HDF5 file.&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;sql&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - SQL support not implemented.&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;SQL support not implemented.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported file format: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - Unsupported file format: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># Return None for unsupported formats</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data loaded successfully. Shape: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, Data Types: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - Data loaded. Shape: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, Data Types: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - END (success): df.shape=</span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error loading data from </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - ERROR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;load_data - END (error): filename=</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, error=</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">UPLOAD_FOLDER</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># --- Routes ---</span>
+
+<div class="viewcode-block" id="welcome">
+<a class="viewcode-back" href="../usage.html#app.welcome">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/welcome&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">welcome</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the welcome page (home.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;welcome - START&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;welcome - END&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;home.html&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="index">
+<a class="viewcode-back" href="../usage.html#app.index">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the main index page (index.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;index - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;index - END&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;index.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="data">
+<a class="viewcode-back" href="../usage.html#app.data">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/data&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the data information page (data.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;data - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;data - END&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;data.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check">
+<a class="viewcode-back" href="../usage.html#app.check">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/check&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the data checking page (check.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check - END&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;check.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fix">
+<a class="viewcode-back" href="../usage.html#app.fix">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/fix&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the data fixing page (fix.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;fix - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;fix - END&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;fix.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="visualisation">
+<a class="viewcode-back" href="../usage.html#app.visualisation">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/visualisation&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">visualisation</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Renders the visualization page (visualisation.html).&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;visualisation - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;visualisation - END&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;visualisation.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="upload_file">
+<a class="viewcode-back" href="../usage.html#app.upload_file">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/upload&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">upload_file</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles file uploads.</span>
+
+<span class="sd">    This route accepts a file upload via a POST request.  It checks if a file</span>
+<span class="sd">    was provided, validates its content using `validate_file_content`, and</span>
+<span class="sd">    saves it to the `UPLOAD_FOLDER`.  It returns a JSON response indicating</span>
+<span class="sd">    success or failure.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with a message and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - START&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;file&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - No file part&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;No file part&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+    <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - No selected file&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;No selected file&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">secure_filename</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="c1"># Use a try-except block to handle potential file system errors</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">validate_file_content</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File uploaded and validated successfully: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - File uploaded and validated successfully: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - END (success)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;File uploaded successfully&quot;</span><span class="p">,</span> <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">}),</span> <span class="mi">200</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># File is invalid, attempt to remove it</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File removed due to invalid content: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - File removed: invalid content: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error removing invalid file </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - Error removing invalid file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Even if file removal fails, still report invalid content</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - END (failure)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Invalid file content&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># Catch file system errors during save</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error saving uploaded file </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - Error saving file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - END (failure - save error)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Error saving file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}),</span> <span class="mi">500</span>  <span class="c1"># Use 500 for server error</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1">#Catch any other error</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during file upload </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;upload_file - Unexpected error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;upload_file - END (failure - save error)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Unexpected error during upload: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+
+
+<div class="viewcode-block" id="check_data">
+<a class="viewcode-back" href="../usage.html#app.check_data">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/check_data&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_data</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs data quality checks on an uploaded file.</span>
+
+<span class="sd">    This route receives the filename of an uploaded file via a POST request.</span>
+<span class="sd">    It loads the data using `load_data` and performs data quality analysis</span>
+<span class="sd">    using `analyze_data`. It returns a JSON response containing the analysis</span>
+<span class="sd">    results.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with the analysis results and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - START&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;check_data - filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - Filename missing&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Filename is required&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;check_data - filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - DataFrame is None&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error loading data&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - Before analyze_data&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">analysis_results</span> <span class="o">=</span> <span class="n">analyze_data</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;check_data - After analyze_data: results=</span><span class="si">{</span><span class="n">analysis_results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - END (success)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Data quality check completed&quot;</span><span class="p">,</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">analysis_results</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during data quality check: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;check_data - ERROR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;check_data - END (error)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error during check&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+
+<div class="viewcode-block" id="apply_fixes">
+<a class="viewcode-back" href="../usage.html#app.apply_fixes">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/apply_fixes&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_fixes</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies data fixes to an uploaded file.</span>
+
+<span class="sd">    This route receives the filename of an uploaded file via a POST request.</span>
+<span class="sd">    It loads the data, applies fixes using `apply_fixes_to_data`, and saves</span>
+<span class="sd">    the corrected data back to the file.  It returns a JSON response</span>
+<span class="sd">    indicating success or failure.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with a success/failure message and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - START&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - Data received: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - Filename missing&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Filename is required&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - Filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - DataFrame is None&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error loading data&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - Before apply_fixes_to_data&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">df_fixed</span><span class="p">,</span> <span class="n">fixes_summary_str</span> <span class="o">=</span> <span class="n">apply_fixes_to_data</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - After apply_fixes_to_data, df_fixed shape: </span><span class="si">{</span><span class="n">df_fixed</span><span class="o">.</span><span class="n">shape</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">df_fixed</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;None&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">file_extension</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - File extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+
+        <span class="k">if</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;xls&quot;</span><span class="p">,</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelWriter</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
+                <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;json&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;txt&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;tsv&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;parquet&quot;</span><span class="p">:</span>
+            <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;feather&quot;</span><span class="p">:</span>
+            <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_feather</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;orc&quot;</span><span class="p">:</span>
+            <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_orc</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;xml&quot;</span><span class="p">:</span>
+            <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_xml</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;html&quot;</span><span class="p">:</span>
+            <span class="n">df_fixed</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">file_extension</span> <span class="o">==</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;fixed_data&quot;</span><span class="p">,</span> <span class="n">df_fixed</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - Unsupported file format: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Unsupported file format for saving&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - Fixes applied and saved&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - END (success)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Fixes applied&quot;</span><span class="p">,</span> <span class="s2">&quot;fixes_summary&quot;</span><span class="p">:</span> <span class="n">fixes_summary_str</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;apply_fixes - Exception: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error applying fixes: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;apply_fixes - END (error)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error applying fixes&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+
+<span class="c1">#Modified Part of app.py</span>
+
+<div class="viewcode-block" id="generate_plots">
+<a class="viewcode-back" href="../usage.html#app.generate_plots">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/generate_plots&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_plots</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates plot suggestions based on the uploaded data.</span>
+
+<span class="sd">    This route receives the filename, selected model, and API key via a POST</span>
+<span class="sd">    request.  It loads the data and uses the specified model (&quot;gemini&quot; or</span>
+<span class="sd">    &quot;claude&quot;) to generate plot suggestions.  It returns a JSON response</span>
+<span class="sd">    containing the suggestions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with plot suggestions and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - START&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="n">filename</span><span class="p">,</span> <span class="n">selected_model</span><span class="p">,</span> <span class="n">api_key</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selectedModel&quot;</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;apiKey&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;generate_plots - filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, selected_model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">, api_key: </span><span class="si">{</span><span class="s1">&#39;PRESENT&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">api_key</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;MISSING&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">api_key</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Filename and API key are required for plot generation&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - Filename or API key missing&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Filename and API key are required&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;generate_plots - filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - DataFrame is None&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error loading data&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;gemini&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - Calling get_plot_suggestion_from_gemini&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">plot_results</span> <span class="o">=</span> <span class="n">get_plot_suggestion_from_gemini</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;claude&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - Calling get_plot_suggestion_from_claude&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">plot_results</span> <span class="o">=</span> <span class="n">get_plot_suggestion_from_claude</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid model selected for plot generation: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;generate_plots - Invalid model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Invalid model&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+        <span class="k">if</span> <span class="n">plot_results</span><span class="p">:</span>
+             <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Plots generated&quot;</span><span class="p">,</span> <span class="s2">&quot;suggestions&quot;</span><span class="p">:</span> <span class="n">plot_results</span><span class="p">}),</span> <span class="mi">200</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to generate plots&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in generate_plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;generate_plots - ERROR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;generate_plots - END (error)&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+
+        <span class="c1">#Even more descriptive error.</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Error generating plots: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+        
+
+<div class="viewcode-block" id="get_interpretation">
+<a class="viewcode-back" href="../usage.html#app.get_interpretation">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/get_interpretation&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_interpretation</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates interpretations for a given plot suggestion.</span>
+
+<span class="sd">    This route receives the selected model, API key, filename, and suggestion</span>
+<span class="sd">    text via a POST request. It loads the data, creates a dataset summary,</span>
+<span class="sd">    and uses the specified model (&quot;gemini&quot; or &quot;claude&quot;) to generate an</span>
+<span class="sd">    interpretation of the suggested plot.  It returns a JSON response</span>
+<span class="sd">    containing the interpretation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with the plot interpretation and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - START&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">selected_model</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selectedModel&quot;</span><span class="p">)</span>
+        <span class="n">api_key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;apiKey&quot;</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">)</span>
+        <span class="n">suggestion_text</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;suggestion&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - selected_model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">, api_key: </span><span class="si">{</span><span class="s1">&#39;PRESENT&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">api_key</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;MISSING&#39;</span><span class="si">}</span><span class="s2">, filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">, suggestion_text: </span><span class="si">{</span><span class="n">suggestion_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">selected_model</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">suggestion_text</span><span class="p">]):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Missing data for graph interpretation&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - Missing data&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Missing data&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - DataFrame is None&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error loading data&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - Before create_dataset_summary&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">dataset_summary</span> <span class="o">=</span> <span class="n">create_dataset_summary</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - After create_dataset_summary: summary=</span><span class="si">{</span><span class="n">dataset_summary</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+
+        <span class="k">if</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;gemini&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - Calling generate_graph_interpretation_gemini&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">interpretation</span> <span class="o">=</span> <span class="n">generate_graph_interpretation_gemini</span><span class="p">(</span><span class="n">suggestion_text</span><span class="p">,</span> <span class="n">dataset_summary</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - generate_graph_interpretation_gemini returned: </span><span class="si">{</span><span class="n">interpretation</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">elif</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;claude&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - Calling generate_graph_interpretation_claude&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">interpretation</span> <span class="o">=</span> <span class="n">generate_graph_interpretation_claude</span><span class="p">(</span><span class="n">suggestion_text</span><span class="p">,</span> <span class="n">dataset_summary</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - generate_graph_interpretation_claude returned: </span><span class="si">{</span><span class="n">interpretation</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - Invalid model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Invalid model&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+        <span class="k">if</span> <span class="n">interpretation</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - END (success)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;interpretation&quot;</span><span class="p">:</span> <span class="n">interpretation</span><span class="p">}),</span> <span class="mi">200</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2"> returned an empty interpretation&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - Empty interpretation from </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - END (failure)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to generate interpretation&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in get_interpretation: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_interpretation - ERROR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;get_interpretation - END (error)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error generating interpretation&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+
+<div class="viewcode-block" id="graph_chat">
+<a class="viewcode-back" href="../usage.html#app.graph_chat">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/graph_chat&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">graph_chat</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles user interactions with a graph image.</span>
+
+<span class="sd">    This route receives the selected model, API key, user message, base64</span>
+<span class="sd">    encoded image, and filename via a POST request.  It loads the data,</span>
+<span class="sd">    creates a dataset summary, and uses the specified model (&quot;gemini&quot; or</span>
+<span class="sd">    &quot;claude&quot;) to handle communication related to the graph image. It returns a</span>
+<span class="sd">    JSON response containing the model&#39;s response.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: A JSON response with the model&#39;s response and status code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - START&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">selected_model</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">user_message</span><span class="p">,</span> <span class="n">base64_image</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="p">[</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;selectedModel&quot;</span><span class="p">,</span> <span class="s2">&quot;apiKey&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="s2">&quot;filename&quot;</span><span class="p">)]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - selected_model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">, api_key: </span><span class="si">{</span><span class="s1">&#39;PRESENT&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">api_key</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;MISSING&#39;</span><span class="si">}</span><span class="s2">, user_message: </span><span class="si">{</span><span class="n">user_message</span><span class="si">}</span><span class="s2">, base64_image: </span><span class="si">{</span><span class="s1">&#39;PRESENT&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">base64_image</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;MISSING&#39;</span><span class="si">}</span><span class="s2">, filename: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">selected_model</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">user_message</span><span class="p">,</span> <span class="n">base64_image</span><span class="p">,</span> <span class="n">filename</span><span class="p">]):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Missing data for graph chat&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - Missing data&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Missing data&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+        <span class="n">image_data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">base64_image</span><span class="p">)</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - filepath: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - DataFrame is None&quot;</span><span class="p">)</span> <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error loading data&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - Before create_dataset_summary&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="n">dataset_summary</span> <span class="o">=</span> <span class="n">create_dataset_summary</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - After create_dataset_summary: summary=</span><span class="si">{</span><span class="n">dataset_summary</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+
+        <span class="k">if</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;gemini&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - Calling handle_graph_communication_gemini&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">handle_graph_communication_gemini</span><span class="p">(</span><span class="n">image_data</span><span class="p">,</span> <span class="n">dataset_summary</span><span class="p">,</span> <span class="n">user_message</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - handle_graph_communication_gemini returned: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">elif</span> <span class="n">selected_model</span> <span class="o">==</span> <span class="s2">&quot;claude&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - Calling handle_graph_communication_claude&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">handle_graph_communication_claude</span><span class="p">(</span><span class="n">image_data</span><span class="p">,</span> <span class="n">dataset_summary</span><span class="p">,</span> <span class="n">user_message</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - handle_graph_communication_claude returned: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - Invalid model: </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Invalid model&quot;</span><span class="p">}),</span> <span class="mi">400</span>
+
+
+        <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - END (success)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">response</span><span class="p">}),</span> <span class="mi">200</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2"> returned an empty response in graph chat&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - Empty response from </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - END (failure)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to get response from </span><span class="si">{</span><span class="n">selected_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}),</span> <span class="mi">500</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in graph_chat: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;graph_chat - ERROR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;graph_chat - END (error)&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Error in chat&quot;</span><span class="p">}),</span> <span class="mi">500</span></div>
+
+
+<div class="viewcode-block" id="uploaded_file">
+<a class="viewcode-back" href="../usage.html#app.uploaded_file">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/uploads/&lt;filename&gt;&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">uploaded_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serves uploaded files.</span>
+
+<span class="sd">    This route allows direct access to uploaded files via their filenames.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filename (str): The name of the file to retrieve.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        flask.Response: The requested file, served with the correct MIME type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;uploaded_file - START: filename=</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;uploaded_file - END: filename=</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug print</span>
+    <span class="k">return</span> <span class="n">send_from_directory</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;UPLOAD_FOLDER&quot;</span><span class="p">],</span> <span class="n">filename</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Bilel Guembri et Wissal Ben Othmen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

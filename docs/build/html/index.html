@@ -1,0 +1,171 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Visualization App Documentation - Master File &mdash; Data Visualization App  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="AI Model Integration" href="ai_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Data Visualization App
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ai_model.html">AI Model Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils_api.html">utils.py API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="app_api.html">app.py API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Data Visualization App</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Data Visualization App Documentation - Master File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-visualization-app-documentation-master-file">
+<h1>Data Visualization App Documentation - Master File<a class="headerlink" href="#data-visualization-app-documentation-master-file" title="Link to this heading"></a></h1>
+<p>Created by sphinx-quickstart on Sun Feb  4 15:16:39 2024.
+Adapted to include AI model integration (Gemini/Claude).</p>
+<p>This project is a data analysis and visualization platform for cleaning, analyzing, and visualizing data with AI-driven insights.
+Under Master AI &amp; Data Science by Wissal Ben Othmen &amp; Bilel Guembri.</p>
+<p>This documentation provides a comprehensive guide to the Data Visualization App,
+a Flask-based tool for data upload, cleaning, analysis, and visualization.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ai_model.html">AI Model Integration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ai_model.html#api-key-configuration">API Key Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ai_model.html#model-selection">Model Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils_api.html">utils.py API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.analyze_data"><code class="docutils literal notranslate"><span class="pre">analyze_data()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.apply_fixes_to_data"><code class="docutils literal notranslate"><span class="pre">apply_fixes_to_data()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.create_dataset_summary"><code class="docutils literal notranslate"><span class="pre">create_dataset_summary()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.exec_code_to_generate_plot"><code class="docutils literal notranslate"><span class="pre">exec_code_to_generate_plot()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.filter_data_by_top_variables"><code class="docutils literal notranslate"><span class="pre">filter_data_by_top_variables()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.fix_json"><code class="docutils literal notranslate"><span class="pre">fix_json()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.generate_graph_interpretation_claude"><code class="docutils literal notranslate"><span class="pre">generate_graph_interpretation_claude()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.generate_graph_interpretation_gemini"><code class="docutils literal notranslate"><span class="pre">generate_graph_interpretation_gemini()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.get_plot_suggestion_from_claude"><code class="docutils literal notranslate"><span class="pre">get_plot_suggestion_from_claude()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.get_plot_suggestion_from_gemini"><code class="docutils literal notranslate"><span class="pre">get_plot_suggestion_from_gemini()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.get_top_n_variables"><code class="docutils literal notranslate"><span class="pre">get_top_n_variables()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.handle_graph_communication_claude"><code class="docutils literal notranslate"><span class="pre">handle_graph_communication_claude()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_api.html#utils.handle_graph_communication_gemini"><code class="docutils literal notranslate"><span class="pre">handle_graph_communication_gemini()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="app_api.html">app.py API</a></li>
+</ul>
+</div>
+<section id="key-features">
+<h2>Key Features:<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Data Upload:</strong>  Supports multiple file formats (CSV, Excel, JSON, etc.).</p></li>
+<li><p><strong>Data Quality Checks:</strong>  Automatic detection of missing values, duplicates, and data type issues.</p></li>
+<li><p><strong>Data Cleaning:</strong>  Tools for handling missing data and removing duplicate entries.</p></li>
+<li><p><strong>Interactive Visualizations:</strong>  Creation of various customizable plots based on your data.</p></li>
+<li><p><strong>AI-Powered Insights:</strong>  Integration with <strong>Gemini or Claude</strong> language models for:
+*   <strong>Visualization Suggestions:</strong>  The AI model analyzes your data and recommends appropriate visualizations.
+*   <strong>Data Interpretation:</strong>  The AI model provides textual descriptions and insights based on the generated visualizations.
+*   <strong>Automated Analysis (Future Enhancement):</strong>  Potential for the AI to perform more complex statistical analyses and generate reports.</p></li>
+<li><p><strong>User-Friendly Interface:</strong>  Designed for intuitive use, regardless of data analysis expertise.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is a basic documentation structure.  Expand this to include sections for:</p>
+<ul class="simple">
+<li><p><strong>Getting Started:</strong> Installation, initial setup, and basic usage.</p></li>
+<li><p><strong>User Guide:</strong>  Detailed instructions on using each feature of the app.</p></li>
+<li><p><strong>AI Model Integration:</strong>  Specific details on how to use the Gemini/Claude features, including API keys, configuration, and limitations.</p></li>
+<li><p><strong>Troubleshooting:</strong>  Common issues and solutions.</p></li>
+<li><p><strong>API Reference:</strong>  Comprehensive documentation of the <cite>ai_model</cite>, <cite>utils_api</cite>, and <cite>app_api</cite> modules.</p></li>
+<li><p><strong>Contributing:</strong>  Guidelines for contributing to the project.</p></li>
+<li><p><strong>Examples:</strong>  Showcase different use cases and provide sample data and visualizations.</p></li>
+<li><p><strong>Advanced Usage:</strong> Coverage of power-user features and customizations.</p></li>
+<li><p><strong>Release Notes / Changelog:</strong> Track updates and new features</p></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ai_model.html" class="btn btn-neutral float-right" title="AI Model Integration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Bilel Guembri et Wissal Ben Othmen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
